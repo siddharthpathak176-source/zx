@@ -46,10 +46,26 @@ import {
 
 export { versions } from './versions.ts'
 
+function assertSafeSegment(name: string, label: string): void {
+  if (
+    !name ||
+    name === '.' ||
+    name === '..' ||
+    path.isAbsolute(name) ||
+    path.basename(name) !== name ||
+    name.includes('\0')
+  ) {
+    throw new Error(
+      `${label} must be a single file name without path separators, got: ${JSON.stringify(name)}`
+    )
+  }
+}
+
 export function tempdir(
   prefix: string = `zx-${randomId()}`,
   mode?: Mode
 ): string {
+  assertSafeSegment(prefix, 'tempdir prefix')
   const dirpath = path.join(os.tmpdir(), prefix)
   fs.mkdirSync(dirpath, { recursive: true, mode })
 
@@ -61,6 +77,7 @@ export function tempfile(
   data?: string | Buffer,
   mode?: Mode
 ): string {
+  if (name !== undefined) assertSafeSegment(name, 'tempfile name')
   const filepath = name
     ? path.join(tempdir(), name)
     : path.join(os.tmpdir(), `zx-${randomId()}`)
